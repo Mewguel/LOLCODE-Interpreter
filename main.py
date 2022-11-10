@@ -11,7 +11,7 @@ import scanner
 # Constants
 TEST_PATH = "../inputs/test.lol"
 
-def display_tok(tok_list: list[scanner.Token]):
+def display_tok(tok_list: list):
     '''
         Takes a list of Tokens
         Displays the symbol table with token type and the value of the lexeme
