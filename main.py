@@ -9,7 +9,7 @@
 import scanner
 
 # Constants
-TEST_PATH = "../inputs/test.lol"
+TEST_PATH = "inputs/power.lol"
 
 def display_tok(tok_list: list):
     '''

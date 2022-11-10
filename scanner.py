@@ -44,30 +44,30 @@ class Scanner:
 
     '''
     code: str
-    reserved_words = [
-        "HAI",
-        "KTHXBYE",
-    ]
+    start = r'HAI'
+    end = r'KTHXBYE'
     noise_words = [
         "OF",
     ]
     keyword = [
-        "VISIBLE",
         "BTW",
         "OBTW",
+        "TLDR",
         "I",
         "HAS",
         "A",
         "ITZ",
-
+        "SAEM",
     ]
-    operators = [
+    arith_operators = [
         "R",
         "SUM",
         "DIFF",
         "PRODUKT",
         "QUOSHUNT",
         "MOD",
+    ]
+    comparison = [
         "BIGGR",
         "SMALLR",
     ]
@@ -78,35 +78,34 @@ class Scanner:
         "NOT",
         "ANY",
         "ALL",
-        "BOTH SAEM",
+        "BOTH",
         "DIFFRINT",
     ]
     concat = r'SMOOSH'
     typecast = [
         "MAEK",
         "IS NOW A",
-        "A"
     ]
+    output = r'VISIBLE'
     input = r'GIMMEH'
-    conditional = [
-        "O RLY?",
-        "YA_RLY",                                             # IF
-        "MEBBE",                                              # ELSE IF
-        "NO WAI",                                             # ELSE
-        "OIC"
-    ]
+    start_cond = r"O RLY\?"
+    if_cond = r"YA_RLY"
+    elif_cond = r"MEBBE"
+    else_cond = r"NO WAI"
+    end_cond = r"OIC"
+
     switch = [
         # SWITCH CASE
-        "WTF?",
-        "OMG",
-        "OMGWTF",
+        r"WTF\?",
+        r"OMG",
+        r"OMGWTF",
     ]
     loop = [
         "IM IN YR",
         "YR",
         "TIL",
         "WILE",
-        "IM_OUTTA_YR",
+        "IM OUTTA YR",
     ]
     increment = "UPPIN"
     decrement = "NERFIN"
@@ -133,32 +132,47 @@ class Scanner:
         tmp_id = ''
         inline_comment = False
         multiline_comment = False
+        eof = len(self.code) - 1
 
-        for char in self.code:
+        for ind, char in enumerate(self.code):
+            # scanning characters part of source code
             if not inline_comment and char == "\n":
                 if not tmp_str:
                     continue
                 word_list.append(''.join(tmp_str))
                 tmp_str = []
-            elif ''.join(tmp_str) in {"BTW", "OBTW"}:
-                print("detected comment")
-                if ''.join(tmp_str) == "BTW":
-                    inline_comment = True
-                else:
-                    multiline_comment = True
+            elif ''.join(tmp_str) == "BTW":
+                inline_comment = True
                 word_list.append(''.join(tmp_str))
                 tmp_str = []
+            elif ''.join(tmp_str) == "OBTW":
+                multiline_comment = True
+                word_list.append(''.join(tmp_str))
+                tmp_str = []
+            elif multiline_comment:
+                tmp_str.append(char)
+                if re.match(r'TLDR', ''.join(tmp_str)):
+                    word_list.append(''.join(tmp_str))
+                    multiline_comment = False
+                    tmp_str = []
+            # for inline_comment strings after BTW
             elif inline_comment:
                 tmp_str.append(char)
                 if char == "\n":
                     word_list.append(''.join(tmp_str[:-1]))
                     inline_comment = False
                     tmp_str = []
+                elif ind == eof:
+                    word_list.append(''.join(tmp_str))
+                    inline_comment = False
+                    tmp_str = []
+                
             elif not tmp_id and char == '"':
                 tmp_id = "yarn"
                 tmp_str = [char]
                 # tmp_str.append(char)
             elif tmp_id == 'yarn' and char == '"':
+                # if 2nd double quote is detected add it to word list and clear yarn flag
                 tmp_str.append(char)
                 word_list.append("".join(tmp_str))
                 tmp_id = ''
@@ -173,15 +187,14 @@ class Scanner:
                 if tmp_str:
                     word_list.append(''.join(tmp_str))
                 tmp_str = []
+            # if char is at the last character
+            elif ind == len(self.code)-1:
+                tmp_str.append(char)
+                word_list.append(''.join(tmp_str))
+                print(tmp_str)
             else:
                 # build the yarn by char
                 tmp_str.append(char)
-                if ''.join(tmp_str) == "KTHXBYE":
-                    word_list.append(''.join(tmp_str))
-                # elif ''.join(tmp_str) == "BTW" or ''.join(tmp_str) == "OBTW":
-                #     word_list.append(''.join(tmp_str))
-                # print(tmp_str)
-        print(word_list)
         return word_list
 
 
@@ -201,16 +214,53 @@ class Scanner:
 
         # Create Tokens from the word list
         for lex in word_list:
-            if lex in self.reserved_words:
-                tokens.append(Token("reserved_word", lex))
+            if re.match(self.start, lex):
+                tokens.append(Token("program_start", lex))
+            elif re.match(self.end, lex):
+                tokens.append(Token("program_end", lex))
             elif lex in self.noise_words:
                 tokens.append(Token("reserved_noise_word", lex))
+            elif lex in self.loop:
+                tokens.append(Token("loop_keyword", lex))
             elif lex in self.keyword:
                 tokens.append(Token("keyword", lex))
-            elif lex in self.operators:
-                tokens.append(Token("operator", lex))
+            # ---------------- LOGIC --------------------------------
+            elif lex in self.logical:
+                tokens.append(Token("logical_operator", lex))
+            elif lex in self.comparison:
+                tokens.append(Token("comparison_operator", lex))
+            # --------------- ARITHMETIC ----------------------------
+            elif lex in self.arith_operators:
+                tokens.append(Token("arith_operator", lex))
+            # --------------- SEPARATORS ----------------------------
             elif lex in self.separators:
                 tokens.append(Token("separator", lex))
+            # -------------- STRING OPE -----------------------------
+            elif re.match(self.concat, lex):
+                tokens.append(Token("concat_operator", lex))
+            # -------------- INPUT/ OUTPUT --------------------------
+            elif re.match(self.input, lex):
+                tokens.append(Token("input_keyword", lex))
+            elif re.match(self.output, lex):
+                tokens.append(Token("output_keyword", lex))
+            # ---------------- FLOW CONTROL -------------------------
+            elif re.match(self.start_cond, lex):
+                tokens.append(Token("if_start", lex))
+            elif re.match(self.if_cond, lex):
+                tokens.append(Token("if_condition", lex))
+            elif re.match(self.elif_cond, lex):
+                tokens.append(Token("else_if_cond", lex))
+            elif re.match(self.else_cond, lex):
+                tokens.append(Token("else_cond", lex))
+            elif re.match(self.switch[0], lex):
+                tokens.append(Token("switch_start", lex))
+            elif re.match(self.switch[1], lex):
+                tokens.append(Token("switch_case", lex))
+            elif re.match(self.switch[2], lex):
+                tokens.append(Token("default_case", lex))
+            elif re.match(self.end_cond, lex):
+                tokens.append(Token("end_condition", lex))
+            # ----------------- LITERALS ----------------------------
             elif re.match(self.numbr_literal, lex):
                 tokens.append(Token("numbr_literal", lex))
             elif re.match(self.numbar_literal, lex):
@@ -221,6 +271,7 @@ class Scanner:
                 tokens.append(Token("troof_literal", lex))
             elif re.match(self.identifiers, lex):
                 tokens.append(Token("identifiers", lex))
+            # ----------------- COMMENT ----------------------------
             elif re.match(self.comment_str, lex):
                 tokens.append(Token("comment_string", lex))
             # word_ind += 1
