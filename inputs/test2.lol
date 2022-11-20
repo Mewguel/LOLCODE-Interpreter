@@ -1,4 +1,4 @@
 HAI
-    VISIBLE "I HAS A"
-    I HAS A thing
+    VISIBLE "HELLO          WORLD"
+    I HAS A thing 1.5
 KTHXBYE
