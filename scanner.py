@@ -34,19 +34,16 @@ class Scanner:
         Attributes:
             code: string
                 - contains the contents of a lol program as a string
+            tokens: list
+                - stores the list of tokens from a given program
+                - pass empty on init
         Immutable Attributes:
-            reserved_words: list
-                - list of reserved words
-            noise_words: list
-                - list of noise words
-            keyword: list
-                - list of keyword
-            operators: list
-                - list of operators
+            keywords
 
     """
 
     code: str
+    tokens: list
     HAI_keyword = r"^HAI$"
     KTHXBYE_keyword = r"^KTHXBYE$"
     # var declare
@@ -64,12 +61,12 @@ class Scanner:
     # ARITHMETIC ------------
     R_keyword = r"^R$"
     SUM_OF_keyword = r"^SUM OF$"
-    DIFF_OF_keyword = r"DIFF OF"
-    PRODUKT_OF_keyword = r"PRODUKT OF"
-    QUOSHUNT_OF_keyword = r"QUOSHUNT OF"
-    MOD_OF_keyword = r"MOD OF"
-    BGGR_OF_keyword = r"BIGGR OF"
-    SMALLR_OF_keyword = r"SMALLR OF"
+    DIFF_OF_keyword = r"^DIFF OF$"
+    PRODUKT_OF_keyword = r"^PRODUKT OF$"
+    QUOSHUNT_OF_keyword = r"^QUOSHUNT OF$"
+    MOD_OF_keyword = r"^MOD OF$"
+    BGGR_OF_keyword = r"^BIGGR OF$"
+    SMALLR_OF_keyword = r"^SMALLR OF$"
 
     # LOGIC ----------
     BOTH_SAEM_keyword = r"^BOTH SAEM$"
@@ -79,21 +76,21 @@ class Scanner:
     ANY_OF = "^ANY OF$"
     ALL_OF = "^ALL OF$"
 
-    DIFFRINT_operator = r"DIFFRINT"
-    NOT_operator = r"NOT"
-    SMOOSH_operator = r"SMOOSH"
+    DIFFRINT_operator = r"^DIFFRINT$"
+    NOT_operator = r"^NOT$"
+    SMOOSH_operator = r"^SMOOSH$"
 
-    MAEK_keyword = r"MAEK"
-    IS_NOW_A_keyword = r"IS NOW A"
+    MAEK_keyword = r"^MAEK$"
+    IS_NOW_A_keyword = r"^IS NOW A$"
 
-    VISIBLE_keyword = r"VISIBLE"
-    GIMMEH_keyword = r"GIMMEH"
+    VISIBLE_keyword = r"VISIBLE$"
+    GIMMEH_keyword = r"GIMMEH$"
 
-    ORLY_keyword = r"O RLY\?"
-    YA_RLY_keyword = r"YA RLY"
-    MEBBE_keyword = r"MEBBE"
-    NO_WAI_keyword = r"NO WAI"
-    OIC_keyword = r"OIC"
+    ORLY_keyword = r"^O RLY\?$"
+    YA_RLY_keyword = r"^YA RLY$"
+    MEBBE_keyword = r"^MEBBE$"
+    NO_WAI_keyword = r"^NO WAI$"
+    OIC_keyword = r"^OIC$"
 
     WTF_keyword = r"WTF\?"
     OMG_keyword = r"OMG"
@@ -108,6 +105,7 @@ class Scanner:
     NERFIN_keyword = r"^NERFIN$"
 
     AN_keyword = r"^AN$"
+    LINEBREAK = r"[\\]n$"
     identifiers = r"^[a-zA-Z][a-zA-Z0-9_]*$"
     # variable_ident = r'\b[a-zA-Z][a-zA-Z0-9_]*\b'
     # fxn_ident = r'\b[a-zA-Z][a-zA-Z0-9_]*\b'
@@ -134,8 +132,10 @@ class Scanner:
             # scanning characters part of source code
             if tmp_id != "inline_comment" and char == "\n":
                 if not tmp_str:
+                    word_list.append(r"\n")
                     continue
                 word_list.append("".join(tmp_str))
+                word_list.append(r"\n")
                 tmp_str = []
             elif "".join(tmp_str) == "BTW":
                 tmp_id = "inline_comment"  # = True
@@ -162,6 +162,7 @@ class Scanner:
                     word_list.append("".join(tmp_str))
                     tmp_id = ""
                     tmp_str = []
+            # YARN LITERALS
             elif not tmp_id and char == '"':
                 tmp_id = "yarn"
                 tmp_str = [char]
@@ -225,6 +226,7 @@ class Scanner:
 
         # Word list
         word_list = self.compound(self.create_word_list())
+        comment_flag = False
 
         # Word Index; keep track of the indices of the lexemes
         # word_ind = 0
@@ -232,11 +234,9 @@ class Scanner:
         # Create Tokens from the word list
         for lex in word_list:
             if re.match(self.HAI_keyword, lex):
-                tokens.append(Token("program_start", lex))
+                tokens.append(Token("HAI_keyword", lex))
             elif re.match(self.KTHXBYE_keyword, lex):
-                tokens.append(Token("program_end", lex))
-            # elif re.match(self.OF_keyword, lex):
-            #     tokens.append(Token("of", lex))
+                tokens.append(Token("KTHXBYE_keyword", lex))
 
             #  ------------------ loop -----------------------------
             elif re.match(self.IM_IN_YR_keyword, lex):
@@ -262,10 +262,13 @@ class Scanner:
 
             elif re.match(self.BTW_keyword, lex):
                 tokens.append(Token("comment keyword", lex))
+                comment_flag = True
             elif re.match(self.OBTW_keyword, lex):
                 tokens.append(Token("multiline comment start", lex))
+                comment_flag = True
             elif re.match(self.TLDR_keyword, lex):
                 tokens.append(Token("multiline comment end", lex))
+                comment_flag = False
 
             # TYPECASTING
             elif re.match(self.MAEK_keyword, lex):
@@ -315,6 +318,10 @@ class Scanner:
             # --------------- SEPARATORS ----------------------------
             elif re.match(self.AN_keyword, lex):
                 tokens.append(Token("AN keyword", lex))
+            elif re.match(self.LINEBREAK, lex):
+                tokens.append(Token("LINEBREAK", lex))
+                if comment_flag:
+                    comment_flag = False
             # -------------- STRING OPE -----------------------------
             elif re.match(self.SMOOSH_operator, lex):
                 tokens.append(Token("concat_operator", lex))
@@ -351,26 +358,29 @@ class Scanner:
                 tokens.append(Token("yarn_literal", lex))
             elif re.match(self.troof_literal, lex):
                 tokens.append(Token("troof_literal", lex))
-            elif re.match(self.identifiers, lex):
+            elif not comment_flag and re.match(self.identifiers, lex):
                 tokens.append(Token("identifiers", lex))
             # ----------------- COMMENT ----------------------------
-            elif re.match(self.comment_str, lex):
+            elif comment_flag and re.match(self.comment_str, lex):
                 tokens.append(Token("comment_string", lex))
+            else:
+                raise SyntaxError(f"Invalid Character: {lex}")
             # word_ind += 1
 
+        self.tokens = tokens
         return tokens
 
 
 # test
-if __name__ == "__main__":
-    TEST_PATH = "inputs/test.lol"
-    code_contents = ""
+# if __name__ == "__main__":
+#     TEST_PATH = "inputs/test.lol"
+#     code_contents = ""
 
-    with open(TEST_PATH, "r", encoding="utf-8") as lol_file:
-        code_contents = lol_file.read()
+#     with open(TEST_PATH, "r", encoding="utf-8") as lol_file:
+#         code_contents = lol_file.read()
 
-    # Instantiate the Lexical Analyzer
-    lexi = Scanner(code_contents)
-    w_list = lexi.tokenize()
+#     # Instantiate the Lexical Analyzer
+#     lexi = Scanner(code_contents)
+#     w_list = lexi.tokenize()
 
-    print(w_list)
+#     print(w_list)

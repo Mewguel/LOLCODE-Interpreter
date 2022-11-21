@@ -10,15 +10,18 @@ import sys
 
 # ui imports
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QTableWidgetItem
 from gui import Ui_MainWindow
 
 # custom modules
-import scanner
+# import scanner
+from scanner import Scanner
+from lparser import Parser
 
 
 # Constants
-TEST_PATH = "inputs/test.lol"
+TEST_PATH = "inputs/test2.lol"
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 # Class for main window ui setup
@@ -27,15 +30,23 @@ class Window(QtWidgets.QMainWindow):
     UI setup
     """
 
-    def __init__(self, token_list: list) -> None:
+    def __init__(self, token_list: list, ast: dict) -> None:
         super(Window, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.tokens = token_list
+        self.ast = ast
 
         self.load_symbol_table()
 
+        # self.update_symbol_table()
+
     def load_symbol_table(self):
+        """
+        Loads the tokens in the symbol table ui
+        """
+        tmp_node = self.ast
+
         self.ui.symbolTableWidget.setRowCount(len(self.tokens))
         self.ui.symbolTableWidget.setColumnCount(4)
 
@@ -47,6 +58,37 @@ class Window(QtWidgets.QMainWindow):
         for ind, obj in enumerate(self.tokens):
             self.ui.symbolTableWidget.setItem(ind, 0, QTableWidgetItem(obj.value))
             self.ui.symbolTableWidget.setItem(ind, 1, QTableWidgetItem(obj.type))
+            if tmp_node is not None:
+                self.ui.symbolTableWidget.setItem(
+                    ind, 2, QTableWidgetItem(tmp_node["line"])
+                )
+                tmp_node = tmp_node["children"][0]
+
+        # def update_symbol_table(self):
+        #     """
+        #     update symbol table from ast
+        #     """
+        #     size = len(self.tokens)
+        #     ind = 0
+
+        #     tmp_node = self.ast
+
+        #     # setting contents in the table here use for loop
+        #     print(tmp_node["line"])
+        #     for ind, obj in enumerate(self.tokens):
+        #         self.ui.symbolTableWidget.setItem(ind, 0, QTableWidgetItem(obj.value))
+        #         self.ui.symbolTableWidget.setItem(ind, 1, QTableWidgetItem(obj.type))
+
+        # while tmp_node is not None:
+        #     self.ui.symbolTableWidget.setItem(
+        #         ind, 3, QTableWidgetItem(tmp_node["line"])
+        #     )
+        #     tmp_node = tmp_node["children"][0]
+        #     ind += 1
+        #     if ind > size:
+        #         break
+
+    #     QTimer.singleShot(2000, self.update_symbol_table)
 
 
 # functions
@@ -60,14 +102,34 @@ def display_tok(tok_list: list):
         print(f"{token.type}: {token.value}")
 
 
-def create_app(token_list: list):
+def create_app(token_list: list, ast: dict):
     """
     UI initialization
     """
     app = QtWidgets.QApplication(sys.argv)
-    win = Window(token_list)
+    win = Window(token_list, ast)
+    win.repaint()
     win.show()
     sys.exit(app.exec_())
+
+
+def print_ast(ast: dict):
+    """
+    visualize ast
+    """
+    # root node
+    tmp_node = ast
+
+    # if node has no children then leaf node
+    # children_count = len(tmp_node.children)
+    print("-----------------------------------------------\n")
+    print(f"ROOT: {tmp_node['type']} - {tmp_node['value']} \n")
+    while tmp_node is not None:
+
+        print(
+            f"{tmp_node['type']} - {tmp_node['value']} - line_no: {tmp_node['line']} - parent_ind: {tmp_node['parent']} \n"
+        )
+        tmp_node = tmp_node["children"][0]
 
 
 if __name__ == "__main__":
@@ -78,9 +140,19 @@ if __name__ == "__main__":
         code_contents = lol_file.read()
 
     # Instantiate the Lexical Analyzer
-    lexi = scanner.Scanner(code_contents)
+    # lexi = scanner.Scanner(code_contents)
+    lexi = Scanner(code_contents, [])
+
     # Store tokens obtained from scanner
     tok = lexi.tokenize()
-    display_tok(tok)
+    # display_tok(tok)
+    display_tok(lexi.tokens)
 
-    create_app(tok)
+    # Parser: tokens, AST list
+    parsy = Parser(lexi.tokens, [])
+    test = parsy.build_ast()
+
+    # print(f"test: {test} \n")
+    print_ast(test)
+
+    create_app(tok, test)

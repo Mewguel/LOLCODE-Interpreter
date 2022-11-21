@@ -1,4 +1,3 @@
 HAI
-    VISIBLE "HELLO          WORLD"
-    I HAS A thing 1.5
+    VISIBLE "Hello    World" BTW this is a comment
 KTHXBYE
