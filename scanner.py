@@ -134,8 +134,7 @@ class Scanner:
                 if not tmp_str:
                     word_list.append(r"\n")
                     continue
-                word_list.append("".join(tmp_str))
-                word_list.append(r"\n")
+                word_list.extend(("".join(tmp_str), r"\n"))
                 tmp_str = []
             elif "".join(tmp_str) == "BTW":
                 tmp_id = "inline_comment"  # = True
@@ -155,7 +154,7 @@ class Scanner:
             elif tmp_id == "inline_comment":
                 tmp_str.append(char)
                 if char == "\n":
-                    word_list.append("".join(tmp_str[:-1]))
+                    word_list.extend(("".join(tmp_str[:-1]), r"\n"))
                     tmp_id = ""
                     tmp_str = []
                 elif ind == eof:

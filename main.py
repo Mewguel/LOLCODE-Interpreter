@@ -10,7 +10,8 @@ import sys
 
 # ui imports
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QTimer
+
+# from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QTableWidgetItem
 from gui import Ui_MainWindow
 
@@ -21,7 +22,7 @@ from lparser import Parser
 
 
 # Constants
-TEST_PATH = "inputs/test2.lol"
+TEST_PATH = "inputs/01_variables.lol"
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 # Class for main window ui setup
@@ -46,22 +47,19 @@ class Window(QtWidgets.QMainWindow):
         Loads the tokens in the symbol table ui
         """
         tmp_node = self.ast
+        self.ui.symbolTable.setRowCount(len(self.tokens))
+        self.ui.symbolTable.setColumnCount(4)
 
-        self.ui.symbolTableWidget.setRowCount(len(self.tokens))
-        self.ui.symbolTableWidget.setColumnCount(4)
+        self.ui.symbolTable.setHorizontalHeaderLabels(TABLE_H)
 
-        self.ui.symbolTableWidget.setHorizontalHeaderLabels(TABLE_H)
-
-        self.ui.symbolTableWidget.setColumnWidth(3, 40)
+        self.ui.symbolTable.setColumnWidth(3, 40)
 
         # setting contents in the table here use for loop
         for ind, obj in enumerate(self.tokens):
-            self.ui.symbolTableWidget.setItem(ind, 0, QTableWidgetItem(obj.value))
-            self.ui.symbolTableWidget.setItem(ind, 1, QTableWidgetItem(obj.type))
+            self.ui.symbolTable.setItem(ind, 0, QTableWidgetItem(obj.value))
+            self.ui.symbolTable.setItem(ind, 1, QTableWidgetItem(obj.type))
             if tmp_node is not None:
-                self.ui.symbolTableWidget.setItem(
-                    ind, 2, QTableWidgetItem(tmp_node["line"])
-                )
+                self.ui.symbolTable.setItem(ind, 2, QTableWidgetItem(tmp_node["line"]))
                 tmp_node = tmp_node["children"][0]
 
         # def update_symbol_table(self):
