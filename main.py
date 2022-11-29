@@ -19,10 +19,11 @@ from gui import Ui_MainWindow
 # import scanner
 from scanner import Scanner
 from lparser import Parser
+from evaluator import Evaluator
 
 
 # Constants
-TEST_PATH = "inputs/01_variables.lol"
+TEST_PATH = "inputs/test2.lol"
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 # Class for main window ui setup
@@ -31,12 +32,12 @@ class Window(QtWidgets.QMainWindow):
     UI setup
     """
 
-    def __init__(self, token_list: list, ast: dict, contents: str) -> None:
+    def __init__(self, token_list: list, abs_t: dict, contents: str) -> None:
         super(Window, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.tokens = token_list
-        self.ast = ast
+        self.ast = abs_t
         self.load_text_edit(contents)
         self.load_symbol_table()
 
@@ -111,23 +112,23 @@ def display_tok(tok_list: list):
         print(f"{token.type}: {token.value}")
 
 
-def create_app(token_list: list, ast: dict, contents: str):
+def create_app(token_list: list, abs_t: dict, contents: str):
     """
     UI initialization
     """
     app = QtWidgets.QApplication(sys.argv)
-    win = Window(token_list, ast, contents)
+    win = Window(token_list, abs_t, contents)
     win.repaint()
     win.show()
     sys.exit(app.exec_())
 
 
-def print_ast(ast: dict):
+def print_ast(abs_t: dict):
     """
     visualize ast
     """
     # root node
-    tmp_node = ast
+    tmp_node = abs_t
 
     # if node has no children then leaf node
     # children_count = len(tmp_node.children)
@@ -136,7 +137,7 @@ def print_ast(ast: dict):
     while tmp_node is not None:
 
         print(
-            f"{tmp_node['value']} - line_no: {tmp_node['line']} - desc: {tmp_node['description']}\n"
+            f"{tmp_node['value']} - line_no: {tmp_node['line']} - desc: {tmp_node['description']} - parent - {tmp_node['parent']}\n"
         )
         tmp_node = tmp_node["children"][0]
 
@@ -155,13 +156,16 @@ if __name__ == "__main__":
     # Store tokens obtained from scanner
     tok = lexi.tokenize()
     # display_tok(tok)
-    display_tok(lexi.tokens)
+    # display_tok(lexi.tokens)
 
     # Parser: tokens, AST list
     parsy = Parser(lexi.tokens, [])
-    test = parsy.build_ast()
+    ast = parsy.build_ast()
 
     # print(f"test: {test} \n")
-    print_ast(test)
+    # print_ast(test)
+    semantics = Evaluator(ast)
 
-    create_app(tok, test, code_contents)
+    semantics.evaluate()
+
+    create_app(tok, ast, code_contents)
