@@ -22,7 +22,7 @@ from lparser import Parser
 
 
 # Constants
-TEST_PATH = "inputs/test.lol"
+TEST_PATH = "inputs/01_variables.lol"
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 # Class for main window ui setup
@@ -31,16 +31,22 @@ class Window(QtWidgets.QMainWindow):
     UI setup
     """
 
-    def __init__(self, token_list: list, ast: dict) -> None:
+    def __init__(self, token_list: list, ast: dict, contents: str) -> None:
         super(Window, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.tokens = token_list
         self.ast = ast
-
+        self.load_text_edit(contents)
         self.load_symbol_table()
 
         # self.update_symbol_table()
+
+    def load_text_edit(self, contents: str):
+        """
+        Display the file contents in the text editor
+        """
+        self.ui.textEdit.setText(contents)
 
     def load_symbol_table(self):
         """
@@ -105,12 +111,12 @@ def display_tok(tok_list: list):
         print(f"{token.type}: {token.value}")
 
 
-def create_app(token_list: list, ast: dict):
+def create_app(token_list: list, ast: dict, contents: str):
     """
     UI initialization
     """
     app = QtWidgets.QApplication(sys.argv)
-    win = Window(token_list, ast)
+    win = Window(token_list, ast, contents)
     win.repaint()
     win.show()
     sys.exit(app.exec_())
@@ -158,4 +164,4 @@ if __name__ == "__main__":
     # print(f"test: {test} \n")
     print_ast(test)
 
-    create_app(tok, test)
+    create_app(tok, test, code_contents)
