@@ -5,7 +5,7 @@
         Parser
 """
 # import sys
-from typing import List, Dict
+from typing import List, Dict, Callable
 from dataclasses import dataclass, field
 
 from scanner import Token
@@ -60,11 +60,6 @@ class Parser:
 
         next_token = self.next_t
 
-        # print(f">>>>>{self.tokens[self.ast_index].value}")
-
-        # print(f">>>>>{next_token}")
-        # print(f">>>>>{token_type}")
-
         if next_token is None:
             raise SyntaxError(
                 f"Unexpected end of program {next_token} at Line: {self.line}, expected KTHXBYE"
@@ -107,6 +102,26 @@ class Parser:
         self.ast = self.program()
         return self.ast
 
+    def create_node(
+        self,
+        curr_token: Token,
+        description: str,
+        line: int,
+        func: Callable = None,
+    ):
+        """
+        For adding children or subtree to the ast
+        """
+        return {
+            "type": curr_token.type,
+            "value": curr_token.value,
+            "description": description,
+            "line": line,
+            "parent": None,
+            "children": [func],
+            # "children": [self.separator()],
+        }
+
     def program(self):
         """
         Starting: HAI
@@ -119,14 +134,20 @@ class Parser:
 
         if self.tokens[self.ast_index].value == "HAI":
             curr_token = self.check("HAI_keyword")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": None,
-                "children": [self.statement()],
-                # "children": [self.separator()],
-            }
+            # return {
+            #     "type": curr_token.type,
+            #     "value": curr_token.value,
+            #     "line": self.line,
+            #     "parent": None,
+            #     "children": [self.statement()],
+            #     # "children": [self.separator()],
+            # }
+            return self.create_node(
+                curr_token=curr_token,
+                description="Program Start",
+                line=self.line,
+                func=self.statement(),
+            )
         elif self.tokens[self.ast_index].value == "BTW":
             return self.comment_statement()
 
@@ -137,15 +158,18 @@ class Parser:
         <statement> : KTHXBYE <inline comment> | <multiline comment>
         """
         if self.tokens[self.ast_index].value == "KTHXBYE":
-            print(self.next_t)
             curr_token = self.check("KTHXBYE_keyword")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [None],
-            }
+            if self.ast_index == len(self.tokens):
+                return self.create_node(curr_token, "Program End", self.line)
+            elif self.tokens[self.ast_index].type == "LINEBREAK":
+                return self.create_node(
+                    curr_token, "Program End", self.line, self.separator()
+                )
+            elif self.tokens[self.ast_index].value == "BTW":
+                return self.create_node(
+                    curr_token, "Program End", self.line, self.comment_statement()
+                )
+        # add comment here
         c_tok = self.tokens[self.ast_index].value
         raise SyntaxError(
             f"Unexpected token {c_tok} at Line: {self.line}, expected end of program"
@@ -159,22 +183,19 @@ class Parser:
         if self.tokens[self.ast_index].type == "LINEBREAK":
             curr_token = self.check("LINEBREAK")
             self.line += 1
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line - 1,
-                "parent": self.ast_index - 1,
-                "children": [self.statement()],
-            }
+
+            # after checking, check if index is the last index
+            if self.ast_index == len(self.tokens) - 1:
+                return self.create_node(
+                    curr_token, "Linebreak", self.line - 1, self.program_end()
+                )
+            else:
+                return self.create_node(
+                    curr_token, "Linebreak", self.line - 1, self.statement()
+                )
         elif self.tokens[self.ast_index].value == "AN":
             curr_token = self.check("AN keyword")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.literal()],
-            }
+            return self.create_node(curr_token, "Linebreak", self.line, self.literal())
 
         raise SyntaxError(f"Unexpected token {curr_token.value}")
 
@@ -197,13 +218,9 @@ class Parser:
         # for error detection
         if self.tokens[self.ast_index].value == "VISIBLE":
             curr_token = self.check("VISIBLE_keyword")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.expression()],
-            }
+            return self.create_node(
+                curr_token, "print statement", self.line, self.expression()
+            )
         # separators
         elif self.tokens[self.ast_index].type == "LINEBREAK":
             return self.separator()
@@ -232,13 +249,14 @@ class Parser:
         For statements starting with BTW
         """
         curr_token = self.check("comment keyword")
-        return {
-            "type": curr_token.type,
-            "value": curr_token.value,
-            "line": self.line - 1,
-            "parent": self.ast_index - 1,
-            "children": [self.inline_comment()],
-        }
+        if self.tokens[self.ast_index - 1].type == "LINEBREAK":
+            return self.create_node(
+                curr_token, "comment keyword", self.line - 1, self.inline_comment()
+            )
+        else:
+            return self.create_node(
+                curr_token, "comment keyword", self.line, self.inline_comment()
+            )
 
     def inline_comment(self):
         """
@@ -246,16 +264,14 @@ class Parser:
         """
         if self.tokens[self.ast_index].value:
             curr_token = self.check("comment_string")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line - 1,
-                "parent": self.ast_index - 1,
-                # "children": [self.statement()],
-                "children": [self.separator()],
-            }
+            if self.ast_index < len(self.tokens):
+                return self.create_node(
+                    curr_token, "comment string", self.line - 1, self.separator()
+                )
+            else:
+                return self.create_node(curr_token, "comment string", self.line)
         c_tok = self.tokens[self.ast_index].value
-        raise SyntaxError(f"Unexpected token {c_tok} at Line: {self.line}, Linebreak")
+        raise SyntaxError(f"Unexpected token {c_tok} at Line: {self.line}")
 
     def expression(self):
         """
@@ -268,13 +284,9 @@ class Parser:
             return self.identifiers()
         elif self.tokens[self.ast_index].value:
             curr_token = self.check("expression")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.assignment_operand()],
-            }
+            return self.create_node(
+                curr_token, "expression", self.line, self.assignment_operand()
+            )
         c_tok = self.tokens[self.ast_index].value
         raise SyntaxError(
             f"Unexpected token {c_tok} at Line: {self.line}, expected {self.ast_index}"
@@ -287,13 +299,9 @@ class Parser:
         c_tok = self.tokens[self.ast_index].value
         if self.tokens[self.ast_index].type == "identifiers":
             curr_token = self.check("identifiers")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.statement()],
-            }
+            return self.create_node(
+                curr_token, "identifier", self.line, self.statement()
+            )
         raise SyntaxError(
             f"Unexpected token {c_tok} at Line: {self.line}, expected something else"
         )
@@ -306,40 +314,24 @@ class Parser:
 
         if self.tokens[self.ast_index].type == "yarn_literal":
             curr_token = self.check("yarn_literal")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.statement()],
-            }
+            return self.create_node(
+                curr_token, "yarn literal", self.line, self.statement()
+            )
         elif self.tokens[self.ast_index].type == "numbr_literal":
             curr_token = self.check("numbr_literal")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.statement()],
-            }
+            return self.create_node(
+                curr_token, "nmbr literal", self.line, self.statement()
+            )
         elif self.tokens[self.ast_index].type == "numbar_literal":
             curr_token = self.check("numbar_literal")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.statement()],
-            }
+            return self.create_node(
+                curr_token, "numbar literal", self.line, self.statement()
+            )
         elif self.tokens[self.ast_index].type == "troof_literal":
             curr_token = self.check("troof_literal")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.statement()],
-            }
+            return self.create_node(
+                curr_token, "troof literal", self.line, self.statement()
+            )
         c_tok = self.tokens[self.ast_index].value
         raise SyntaxError(
             f"Unexpected token {c_tok} at Line: {self.line}, expected another tok"
@@ -356,13 +348,9 @@ class Parser:
         c_tok = self.tokens[self.ast_index].value
         if self.tokens[self.ast_index].type == "variable declaration":
             curr_token = self.check("variable declaration")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "line": self.line,
-                "parent": self.ast_index - 1,
-                "children": [self.varident()],
-            }
+            return self.create_node(
+                curr_token, "variable declaration", self.line, self.varident()
+            )
         raise SyntaxError(
             f"Unexpected token {c_tok} at Line: {self.line}, expected variable declaration."
         )
@@ -372,18 +360,11 @@ class Parser:
         Variable identifier
         """
         c_tok = self.tokens[self.ast_index].value
-        # print(self.tokens[self.ast_index - 1].value)
-        # print(self.tokens[self.ast_index].type)
-        # print(self.tokens[self.ast_index + 1].value)
         if self.tokens[self.ast_index].type == "identifiers":
             curr_token = self.check("identifiers")
-            return {
-                "type": "variable identifier",
-                "value": curr_token.value,
-                "parent": self.ast_index - 1,
-                "line": self.line,
-                "children": [self.assignment()],
-            }
+            return self.create_node(
+                curr_token, "variable identifier", self.line, self.assignment()
+            )
         raise SyntaxError(f"Unexpected token {c_tok}, expected variable identifier.")
 
     def assignment(self):
@@ -393,13 +374,9 @@ class Parser:
         c_tok = self.tokens[self.ast_index].value
         if self.tokens[self.ast_index].type == "ITZ keyword":
             curr_token = self.check("ITZ keyword")
-            return {
-                "type": curr_token.type,
-                "value": curr_token.value,
-                "parent": self.ast_index - 1,
-                "line": self.line,
-                "children": [self.assignment_operand()],
-            }
+            return self.create_node(
+                curr_token, "assignment operand", self.line, self.assignment_operand()
+            )
         # if no ITZ is detected
         # automatically make the last varident as a NOOB
         # init its value to zero

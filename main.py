@@ -22,7 +22,7 @@ from lparser import Parser
 
 
 # Constants
-TEST_PATH = "inputs/01_variables.lol"
+TEST_PATH = "inputs/test.lol"
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 # Class for main window ui setup
@@ -59,7 +59,12 @@ class Window(QtWidgets.QMainWindow):
             self.ui.symbolTable.setItem(ind, 0, QTableWidgetItem(obj.value))
             self.ui.symbolTable.setItem(ind, 1, QTableWidgetItem(obj.type))
             if tmp_node is not None:
-                self.ui.symbolTable.setItem(ind, 2, QTableWidgetItem(tmp_node["line"]))
+                self.ui.symbolTable.setItem(
+                    ind, 2, QTableWidgetItem(str(tmp_node["description"]))
+                )
+                self.ui.symbolTable.setItem(
+                    ind, 3, QTableWidgetItem(str(tmp_node["line"]))
+                )
                 tmp_node = tmp_node["children"][0]
 
         # def update_symbol_table(self):
@@ -125,7 +130,7 @@ def print_ast(ast: dict):
     while tmp_node is not None:
 
         print(
-            f"{tmp_node['type']} - {tmp_node['value']} - line_no: {tmp_node['line']} - parent_ind: {tmp_node['parent']} \n"
+            f"{tmp_node['value']} - line_no: {tmp_node['line']} - desc: {tmp_node['description']}\n"
         )
         tmp_node = tmp_node["children"][0]
 

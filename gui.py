@@ -27,10 +27,10 @@ class Ui_MainWindow(object):
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
 
-        self.textBrowser = QtWidgets.QTextBrowser(self.verticalLayoutWidget)
-        self.textBrowser.setMinimumSize(QtCore.QSize(480, 0))
-        self.textBrowser.setObjectName("textBrowser")
-        self.horizontalLayout.addWidget(self.textBrowser)
+        self.textEdit = QtWidgets.QTextEdit(self.verticalLayoutWidget)
+        self.textEdit.setMinimumSize(QtCore.QSize(480, 0))
+        self.textEdit.setObjectName("textEdit")
+        self.horizontalLayout.addWidget(self.textEdit)
 
         self.symbolTable = QtWidgets.QTableWidget(self.verticalLayoutWidget)
         self.symbolTable.setMinimumSize(QtCore.QSize(480, 0))
