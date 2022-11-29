@@ -1,5 +1,8 @@
 HAI
-    VISIBLE SUM OF 1 AN 2       BTW test
+    I HAS A num ITZ 17
+    I HAS A name ITZ "seventeen"
+    I HAS A fnum ITZ 17.0
+    VISIBLE SUM OF 2 AN PRODUKT OF 5 AN 3      BTW test
     VISIBLE DIFF OF 1 AN 2
-    VISIBLE PRODUKT OF 1 AN 2
+    VISIBLE QUOSHUNT OF 12 AN 3
 KTHXBYE

@@ -78,4 +78,4 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton.setText(_translate("MainWindow", "Clear Output"))
         self.pushButton_2.setText(_translate("MainWindow", "RUN"))
-        self.terminalOutput.setPlainText(_translate("MainWindow", "> Hello World!"))
+        # self.terminalOutput.setPlainText(_translate("MainWindow", "> Hello World!"))
