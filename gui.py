@@ -10,8 +10,10 @@ from PyQt5.QtWidgets import QDialog, QFileDialog, QTableWidgetItem
 # import scanner
 from scanner import Scanner
 from lparser import Parser
+from evaluator import Evaluator
 
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
+VTABLE_H = ["Name", "Value", "Type"]
 
 
 class Ui_MainWindow(object):
@@ -126,7 +128,11 @@ class Ui_MainWindow(object):
         """
         Runs the code on the text editor
         """
-        print("I am running")
+        semantics = Evaluator(self.ast)
+        result = semantics.evaluate()
+        self.load_variables(semantics)
+        for res in result:
+            self.terminalOutput.appendPlainText(str(res))
 
     def open(self, MainWindow):
         """
@@ -163,9 +169,6 @@ class Ui_MainWindow(object):
 
         self.load_symbol_table()
 
-        # semantics = Evaluator(ast)
-        # semantics.evaluate()
-
     def load_symbol_table(self):
         """
         Loads the tokens in the symbol table ui
@@ -192,3 +195,33 @@ class Ui_MainWindow(object):
                     ind, 3, QTableWidgetItem(str(tmp_node["line"]))
                 )
                 tmp_node = tmp_node["children"][0]
+
+    def load_variables(self, evalu: Evaluator):
+        """
+        Loads the variable table
+        """
+        if self.tokens is None:
+            return
+        self.varTable.setRowCount(len(evalu.var_table))
+        self.varTable.setColumnCount(3)
+        self.varTable.setHorizontalHeaderLabels(VTABLE_H)
+        self.varTable.setColumnWidth(3, 80)
+
+        # setting contents in the table here use for loop
+        for ind, obj in enumerate(evalu.var_table):
+            self.varTable.setItem(ind, 0, QTableWidgetItem(obj))  # name
+            self.varTable.setItem(
+                ind, 1, QTableWidgetItem(str(evalu.var_table[obj]))
+            )  # value
+            # type
+            if evalu.var_table[obj] == "":
+                self.varTable.setItem(ind, 2, QTableWidgetItem("NOOB"))
+            elif isinstance(evalu.var_table[obj], int):
+                self.varTable.setItem(ind, 2, QTableWidgetItem("NUMBR"))
+            elif isinstance(evalu.var_table[obj], float):
+                self.varTable.setItem(ind, 2, QTableWidgetItem("NUMBAR"))
+            elif isinstance(evalu.var_table[obj], str):
+                if evalu.var_table[obj] in ["WIN", "FAIL"]:
+                    self.varTable.setItem(ind, 2, QTableWidgetItem("TROOF"))
+                else:
+                    self.varTable.setItem(ind, 2, QTableWidgetItem("YARN"))

@@ -36,19 +36,24 @@ class Evaluator:
     ast: Dict
     var_table: Dict = field(default_factory=lambda: {})
 
-    def evaluate(self):
+    def evaluate(self) -> str:
         """
         Run through the AST
         """
+        result = []
         temp = self.ast
         while temp is not None:
             if temp["type"] == "VISIBLE_keyword":
-                temp = self.visible(temp)
+                temp = self.visible(temp, result)
             elif temp["type"] == "variable declaration":
                 temp = self.var_declare(temp)
             temp = temp["children"][0]
 
-    def visible(self, node):
+        # for the output/printing/visible
+        # print(self.var_table)
+        return result
+
+    def visible(self, node, res: str):
         """
         Print function
         """
@@ -80,8 +85,8 @@ class Evaluator:
                 break
 
         for a in arguments:
-            # print(f"{a}", end="")
-            print(f"{a}")
+            res.append(a)
+            # print(f"{a}")
         return node
 
     def arithmetic(self, node):
