@@ -391,7 +391,7 @@ class Parser:
                 self.statement(),
             )
         elif self.tokens[self.ast_index].type == "troof_literal":
-            curr_token = self.check("numbar_literal")
+            curr_token = self.check("troof_literal")
             return self.create_node(
                 curr_token,
                 "troof literal",

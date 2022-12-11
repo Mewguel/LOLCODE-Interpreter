@@ -23,7 +23,7 @@ from evaluator import Evaluator
 
 
 # Constants
-TEST_PATH = "inputs/test2.lol"
+TEST_PATH = "inputs/01_variables.lol"
 TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 # Class for main window ui setup
@@ -32,7 +32,9 @@ class Window(QtWidgets.QMainWindow):
     UI setup
     """
 
-    def __init__(self, token_list: list, abs_t: dict, contents: str) -> None:
+    def __init__(
+        self, token_list: list = None, abs_t: dict = None, contents: str = None
+    ) -> None:
         super(Window, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -40,6 +42,7 @@ class Window(QtWidgets.QMainWindow):
         self.ast = abs_t
         self.load_text_edit(contents)
         self.load_symbol_table()
+        self.inputh_path = ""
 
         # self.update_symbol_table()
 
@@ -53,6 +56,8 @@ class Window(QtWidgets.QMainWindow):
         """
         Loads the tokens in the symbol table ui
         """
+        if self.tokens is None:
+            return
         tmp_node = self.ast
         self.ui.symbolTable.setRowCount(len(self.tokens))
         self.ui.symbolTable.setColumnCount(4)
@@ -74,32 +79,6 @@ class Window(QtWidgets.QMainWindow):
                 )
                 tmp_node = tmp_node["children"][0]
 
-        # def update_symbol_table(self):
-        #     """
-        #     update symbol table from ast
-        #     """
-        #     size = len(self.tokens)
-        #     ind = 0
-
-        #     tmp_node = self.ast
-
-        #     # setting contents in the table here use for loop
-        #     print(tmp_node["line"])
-        #     for ind, obj in enumerate(self.tokens):
-        #         self.ui.symbolTableWidget.setItem(ind, 0, QTableWidgetItem(obj.value))
-        #         self.ui.symbolTableWidget.setItem(ind, 1, QTableWidgetItem(obj.type))
-
-        # while tmp_node is not None:
-        #     self.ui.symbolTableWidget.setItem(
-        #         ind, 3, QTableWidgetItem(tmp_node["line"])
-        #     )
-        #     tmp_node = tmp_node["children"][0]
-        #     ind += 1
-        #     if ind > size:
-        #         break
-
-    #     QTimer.singleShot(2000, self.update_symbol_table)
-
 
 # functions
 def display_tok(tok_list: list):
@@ -112,7 +91,7 @@ def display_tok(tok_list: list):
         print(f"{token.type}: {token.value}")
 
 
-def create_app(token_list: list, abs_t: dict, contents: str):
+def create_app(token_list: list = None, abs_t: dict = None, contents: str = None):
     """
     UI initialization
     """
@@ -169,3 +148,4 @@ if __name__ == "__main__":
     semantics.evaluate()
 
     create_app(tok, ast, code_contents)
+    # create_app()

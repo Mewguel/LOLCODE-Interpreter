@@ -4,6 +4,14 @@
 
 
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtWidgets import QDialog, QFileDialog, QTableWidgetItem
+
+# custom modules
+# import scanner
+from scanner import Scanner
+from lparser import Parser
+
+TABLE_H = ["Lexeme", "Type", "Description", "Line"]
 
 
 class Ui_MainWindow(object):
@@ -64,18 +72,123 @@ class Ui_MainWindow(object):
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1920, 26))
         self.menubar.setObjectName("menubar")
+        self.menuFile = QtWidgets.QMenu(self.menubar)
+        self.menuFile.setObjectName("menuFile")
+        self.menuRun = QtWidgets.QMenu(self.menubar)
+        self.menuRun.setObjectName("menuRun")
         MainWindow.setMenuBar(self.menubar)
 
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
+        self.actionOpen = QtWidgets.QAction(MainWindow)
+        self.actionOpen.setObjectName("actionOpen")
+        self.actionRun = QtWidgets.QAction(MainWindow)
+        self.actionRun.setObjectName("actionRun")
+        self.menuFile.addAction(self.actionOpen)
+        self.menuRun.addAction(self.actionRun)
+        self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuRun.menuAction())
+
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
+        # Adding pushbutton actions/event handlers
+        self.pushButton.clicked.connect(self.clear_output)
+        self.pushButton_2.clicked.connect(self.execute)
+
+        # Adding Menu actions
+        self.actionOpen.triggered.connect(lambda: self.open(MainWindow))
+        self.actionRun.triggered.connect(lambda: self.execute())
+
     def retranslateUi(self, MainWindow):
+        """
+        For Updating the strings/labels of the MainWindow
+        """
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton.setText(_translate("MainWindow", "Clear Output"))
         self.pushButton_2.setText(_translate("MainWindow", "RUN"))
-        # self.terminalOutput.setPlainText(_translate("MainWindow", "> Hello World!"))
+        self.menuFile.setTitle(_translate("MainWindow", "File"))
+        self.menuRun.setTitle(_translate("MainWindow", "Run"))
+        self.actionOpen.setText(_translate("MainWindow", "Open"))
+        self.actionRun.setText(_translate("MainWindow", "Run"))
+        self.terminalOutput.setPlainText(_translate("MainWindow", "> Hello World!"))
+
+    def clear_output(self):
+        """
+        Clears the output terminal
+        """
+        self.terminalOutput.setPlainText("")
+
+    def execute(self):
+        """
+        Runs the code on the text editor
+        """
+        print("I am running")
+
+    def open(self, MainWindow):
+        """
+        Open the File Explorer
+        """
+        fname = QFileDialog.getOpenFileName(MainWindow, "Open LOL file", "/inputs")
+        self.input_path = fname[0]
+        self.terminalOutput.setPlainText(f"{self.input_path} has been loaded.")
+        self.load_file_cont()
+
+    def load_file_cont(self):
+        """
+        Read file contents to UI
+        """
+        code_contents = ""
+
+        with open(self.input_path, "r", encoding="utf-8") as lol_file:
+            code_contents = lol_file.read()
+
+        self.textEdit.setText(code_contents)
+        self.update_symbol_table(code_contents)
+
+    def update_symbol_table(self, code_conts):
+        """
+        Update Symbol Table from the new file
+        """
+        lexi = Scanner(code_conts, [])
+        tok = lexi.tokenize()
+        parsy = Parser(lexi.tokens, [])
+        ast = parsy.build_ast()
+
+        self.tokens = tok
+        self.ast = ast
+
+        self.load_symbol_table()
+
+        # semantics = Evaluator(ast)
+        # semantics.evaluate()
+
+    def load_symbol_table(self):
+        """
+        Loads the tokens in the symbol table ui
+        """
+        if self.tokens is None:
+            return
+        tmp_node = self.ast
+        self.symbolTable.setRowCount(len(self.tokens))
+        self.symbolTable.setColumnCount(4)
+
+        # self.symbolTable.setHorizontalHeaderLabels(TABLE_H)
+
+        self.symbolTable.setColumnWidth(3, 40)
+
+        # setting contents in the table here use for loop
+        for ind, obj in enumerate(self.tokens):
+            self.symbolTable.setItem(ind, 0, QTableWidgetItem(obj.value))
+            self.symbolTable.setItem(ind, 1, QTableWidgetItem(obj.type))
+            if tmp_node is not None:
+                self.symbolTable.setItem(
+                    ind, 2, QTableWidgetItem(str(tmp_node["description"]))
+                )
+                self.symbolTable.setItem(
+                    ind, 3, QTableWidgetItem(str(tmp_node["line"]))
+                )
+                tmp_node = tmp_node["children"][0]

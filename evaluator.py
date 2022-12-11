@@ -54,7 +54,7 @@ class Evaluator:
         """
         arguments = []
         # collect all arguments of Print
-        while True:
+        while node is not None:
             if node["type"] == "yarn_literal":
                 arguments.append(node["value"][1:-1])
             elif node["type"] in [
@@ -68,16 +68,20 @@ class Evaluator:
                 node = result[1]
                 arguments.append(result[0])
                 break
-            # elif node['type'] in self.var_table.keys():
-            #     arguments.append()
+            elif node["type"] == "identifiers":
+                for var_ident in self.var_table.keys():
+                    if node["value"] == var_ident:
+                        arguments.append(self.var_table[var_ident])
+                        node = node["children"][0]
+                        break
 
             node = node["children"][0]
             if node["type"] in ["LINEBREAK", "comment keyword"]:
                 break
 
         for a in arguments:
-            print(f"{a}", end="")
-        print("")
+            # print(f"{a}", end="")
+            print(f"{a}")
         return node
 
     def arithmetic(self, node):
@@ -102,10 +106,14 @@ class Evaluator:
             # get first operand
             operand_1 = float(node["value"])
             node = node["children"][0]
+        # nested arithmetic expression
         elif node["type"] in OPS:
             res = self.arithmetic(node)
             node = res[1]
             operand_1 = res[0]
+        elif node["type"] == "identifiers":
+            operand_1 = self.var_table[node["value"]]
+            node = node["children"][0]
 
         if node["type"] == "AN keyword":
             node = node["children"][0]
@@ -123,6 +131,9 @@ class Evaluator:
             res = self.arithmetic(node)
             node = res[1]
             operand_2 = res[0]
+        elif node["type"] == "identifiers":
+            operand_2 = self.var_table[node["value"]]
+            node = node["children"][0]
 
         # base cases
         if operand_1 and operand_2:
@@ -150,9 +161,11 @@ class Evaluator:
         if node["type"] == "identifiers":
             var_key = str(node["value"])
             node = node["children"][0]
+
         if node["type"] == "ITZ keyword":
             assign = True
             node = node["children"][0]
+
         if assign:
             if node["type"] == "yarn_literal":
                 var_val = node["value"]
@@ -162,11 +175,30 @@ class Evaluator:
                 var_val = float(node["value"])
             elif node["type"] == "troof_literal":
                 # Assign true of troof is WIN
-                var_val = node["value"] == "WIN"
+                var_val = node["value"]
+            # assign result of arithmetic operations
+            elif node["type"] in [
+                "R keyword",
+                "SUM_OF keyword",
+                "DIFF_OF keyword",
+                "PRODUKT_OF keyword",
+                "QUOSHUNT_OF keyword",
+                "MOD_OF keyword",
+                "BGGR_OF keyword",
+                "SMALLR_OF keyword",
+                "UPPIN keyword",
+                "NERFIN keyword",
+            ]:
+                res = self.arithmetic(node)
+                # if res is not None:
+                #     # print(res[0])
+                #     self.var_table[var_key] = res[0]
+                # print(self.var_table)
+                # NEEDS FIXING
+
             node = node["children"][0]
 
         self.var_table[var_key] = var_val
-        print(f"{self.var_table}")
 
         # if var key and no var val: var key is a noob
         # if var_key and not var_val:
