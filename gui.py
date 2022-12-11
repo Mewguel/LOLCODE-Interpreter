@@ -134,6 +134,10 @@ class Ui_MainWindow(object):
         for res in result:
             self.terminalOutput.appendPlainText(str(res))
 
+        # if there is a GIMMEH
+        user_inp = self.get_user_input()
+        # print(user_inp)
+
     def open(self, MainWindow):
         """
         Open the File Explorer
@@ -225,3 +229,11 @@ class Ui_MainWindow(object):
                     self.varTable.setItem(ind, 2, QTableWidgetItem("TROOF"))
                 else:
                     self.varTable.setItem(ind, 2, QTableWidgetItem("YARN"))
+
+    def get_user_input(self):
+        """
+        Gets user input in the terminal
+        """
+        text_box_val = self.terminalOutput.toPlainText().splitlines()
+        # User input is always at the last
+        return text_box_val[len(text_box_val) - 1]

@@ -45,6 +45,8 @@ class Evaluator:
         while temp is not None:
             if temp["type"] == "VISIBLE_keyword":
                 temp = self.visible(temp, result)
+            elif temp["type"] == "input_keyword":
+                temp = self.gimmeh(temp)
             elif temp["type"] == "variable declaration":
                 temp = self.var_declare(temp)
             temp = temp["children"][0]
@@ -208,4 +210,12 @@ class Evaluator:
         # if var key and no var val: var key is a noob
         # if var_key and not var_val:
         #     var_val = 0
+        return node
+
+    def gimmeh(self, node):
+        """GIMMEH input semantics"""
+        print("GIMMEH")
+
+        # after getting input
+        node = node["children"][0]
         return node
